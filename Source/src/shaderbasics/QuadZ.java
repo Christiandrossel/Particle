@@ -1,0 +1,89 @@
+package shaderbasics;
+
+import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
+
+public class QuadZ {
+    public static String fragShaderSource = "" +
+            "varying vec4 color;" +
+            "" +
+            "void main() { " +
+            "   gl_FragColor = color;" +
+            "}";
+
+    public static String vertexShaderSource = "" +
+            "varying vec4 color;" +
+            "" +
+            "void main() {" +
+            "   float zVal  = 1.0f-(gl_ModelViewProjectionMatrix * gl_Vertex).z*0.5f;" +
+            "   color       = vec4(zVal, zVal, zVal, 0);" +
+            "   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"+
+            "}";
+    
+    private static void shaderCodeVorbereiten() {
+       int myProgram = glCreateProgram();
+         int fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+         glShaderSource(fragShader, fragShaderSource);
+         glCompileShader(fragShader);
+         System.out.println(glGetShaderInfoLog(fragShader, 1024));
+         glAttachShader(myProgram, fragShader);
+
+         int vertShader = glCreateShader(GL_VERTEX_SHADER);
+         glShaderSource(vertShader, vertexShaderSource);
+         glCompileShader(vertShader);
+         System.out.println(glGetShaderInfoLog(vertShader, 1024));
+         glAttachShader(myProgram, vertShader);
+
+         glLinkProgram(myProgram);
+         glUseProgram(myProgram);
+    }
+    
+    private static void setBackGroundColor(float a, float b, float c) {
+       glClearColor(a, b, c, 1);
+       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    public static void main(String[] args) throws Exception {
+        // Ü: Refactoring zu createDisplay()
+        DisplayMode dm = new DisplayMode(800, 600);
+        Display.setDisplayMode(dm);
+        Display.create();
+
+        shaderCodeVorbereiten();
+        
+        glEnable(GL_DEPTH_TEST);
+        long start = System.nanoTime();
+        while (!Display.isCloseRequested()) {
+            double now = (System.nanoTime()-start)/1e9;
+            
+            setBackGroundColor(0.1f, 0.2f, 0.3f);
+            
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            double r = dm.getHeight()*1./dm.getWidth();
+            glFrustum(-1, 1, -r, r, 1, 20);
+            glMatrixMode(GL_MODELVIEW);
+            
+            glLoadIdentity();
+            
+            glTranslated(0, 0, -3);
+            glRotatef((float)now*5.0f,0,0,1);
+            glRotatef(10*(float)now*5.0f,1,0,0);
+            
+            // Ü: Refactoring renderQuad
+            // Objekt zeichnen
+            glBegin(GL_QUADS);
+            glVertex3f(-1, -1, 0);
+            glVertex3f( 1, -1, 0);
+            glVertex3f( 1,  1, 0);
+            glVertex3f(-1,  1, 0);
+            glEnd();
+            
+            Display.update();
+        }       
+        Display.destroy();
+    }
+}
+
